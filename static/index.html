@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>评论抓抓抓 2.0</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --line: #e5e7eb; --text: #111827; --muted: #6b7280;
+  --accent: #2563eb; --accent-soft: #eff4ff; --ok: #059669; --warn: #d97706; --err: #dc2626;
+  --code: #0f172a; --code-text: #cbd5e1; --chip: #f3f4f6;
+  --x: #111827; --facebook: #1877f2; --youtube: #e11d48; --reddit: #ea580c; --linkedin: #0a66c2; --threads: #7c3aed;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0f17; --panel: #121826; --line: #232b3b; --text: #e5e7eb; --muted: #94a3b8;
+    --accent: #60a5fa; --accent-soft: #172036; --chip: #1b2333; --code: #070a10; --code-text: #cbd5e1;
+    --x: #e5e7eb;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-bottom: 1px solid var(--line);
+  background: var(--panel); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 17px; margin: 0; font-weight: 650; }
+header .sub { color: var(--muted); font-size: 13px; }
+.spacer { flex: 1; }
+.pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); cursor: pointer; background: var(--panel); color: var(--text); }
+.pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.pill.bad { color: var(--err); border-color: color-mix(in srgb, var(--err) 40%, transparent); }
+main { display: grid; grid-template-columns: 340px 1fr; gap: 20px; padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.card h2 { font-size: 15px; margin: 0 0 14px; font-weight: 650; }
+label.f { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; font-weight: 550; }
+input[type=text], input[type=number], input[type=password] {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit;
+  background: var(--panel); color: var(--text); }
+input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); border-color: var(--accent); }
+input:disabled { opacity: .55; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); cursor: pointer; user-select: none; font-size: 13px; color: var(--text); }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.chip.on { background: var(--accent-soft); border-color: var(--accent); }
+.chip.on::after { content: "✓"; font-size: 11px; color: var(--accent); }
+.linkbtn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; padding: 0 4px; }
+.switch { display: flex; align-items: center; gap: 10px; margin-top: 16px; cursor: pointer; user-select: none; }
+.switch input { display: none; }
+.switch .track { width: 34px; height: 20px; border-radius: 99px; background: var(--line); position: relative; transition: .15s; flex: none; }
+.switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: .15s; }
+.switch input:checked + .track { background: var(--accent); }
+.switch input:checked + .track::after { left: 16px; }
+.switch small { color: var(--muted); display: block; font-size: 12px; }
+details { margin-top: 14px; }
+details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.estimate { margin-top: 16px; padding: 10px 12px; border-radius: 8px; background: var(--chip); font-size: 13px; }
+.estimate b { font-size: 15px; }
+.estimate small { color: var(--muted); display: block; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; width: 100%; margin-top: 14px; padding: 11px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.err { color: var(--err); font-size: 13px; margin-top: 8px; min-height: 1em; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -4px 0 16px; }
+.tab { padding: 8px 12px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 550; }
+.tab.on { color: var(--text); border-bottom-color: var(--accent); }
+.stack { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.progress { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.pcard { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; }
+.pcard .name { font-weight: 600; font-size: 13px; }
+.pcard .state { margin-left: auto; font-size: 12px; color: var(--muted); }
+.pcard.done .state { color: var(--ok); font-weight: 600; }
+.spin { display: inline-block; vertical-align: middle; width: 12px; height: 12px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s .8s linear infinite; }
+@keyframes s { to { transform: rotate(360deg); } }
+.log { background: var(--code); color: var(--code-text); border-radius: 8px; padding: 10px 12px; height: 220px; overflow: auto;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+.runhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.runhead .t { font-weight: 650; font-size: 15px; }
+.runhead .m { color: var(--muted); font-size: 12px; }
+.filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.filters .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.filters input { width: 220px; }
+@media (max-width: 600px) { .filters .right { margin-left: 0; width: 100%; } .filters input { flex: 1; width: auto; } }
+.fchip { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; background: var(--panel); color: var(--text); display: inline-flex; align-items: center; gap: 5px; }
+.fchip.on { background: var(--text); color: var(--panel); border-color: var(--text); }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--chip); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+td.c { min-width: 280px; max-width: 560px; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.clamp.open { -webkit-line-clamp: unset; }
+td.post { max-width: 260px; color: var(--muted); font-size: 12px; }
+td.post a { color: var(--muted); }
+.ptag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.ptag .dot, .fchip .dot { width: 7px; height: 7px; border-radius: 50%; }
+.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+.more { display: block; margin: 12px auto 0; }
+.hist { display: flex; flex-direction: column; gap: 8px; }
+.hitem { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+.hitem:hover { border-color: var(--accent); }
+.hitem .t { font-weight: 600; }
+.hitem .r { text-align: right; font-variant-numeric: tabular-nums; }
+.hitem .pp { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
+.modal.on { display: flex; }
+.modal .card { width: 420px; max-width: 100%; }
+.modal p { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>评论抓抓抓 2.0</h1>
+  <span class="sub">按话题抓 6 个平台的评论，合并成一张表</span>
+  <span class="spacer"></span>
+  <button class="pill" id="tokenPill">检查 token…</button>
+</header>
+
+<main>
+  <!-- 左：新建任务 -->
+  <section class="card" style="align-self:start">
+    <h2>新建任务</h2>
+    <label class="f" for="topic">话题关键词</label>
+    <input type="text" id="topic" placeholder="例如：AI and Insurance" autocomplete="off">
+
+    <label class="f">平台 <button class="linkbtn" id="selAll">全选</button><button class="linkbtn" id="selNone">清空</button></label>
+    <div class="chips" id="platChips"></div>
+
+    <div class="row2">
+      <div><label class="f" for="posts">每个平台抓几个帖子</label><input type="number" id="posts" min="1" max="100" value="5"></div>
+      <div><label class="f" for="comments">每个帖子抓几条评论</label><input type="number" id="comments" min="1" max="2000" value="50"></div>
+    </div>
+
+    <label class="switch">
+      <input type="checkbox" id="testMode"><span class="track"></span>
+      <span>轻量测试模式<small>每平台 2 帖 × 5 评论，总预算 $1</small></span>
+    </label>
+
+    <details>
+      <summary>预算设置</summary>
+      <div class="row2">
+        <div><label class="f" for="budget">本次总预算（$）</label><input type="number" id="budget" min="0.01" step="0.1" value="2"></div>
+        <div><label class="f" for="perRun">单个 actor 上限（$）</label><input type="number" id="perRun" min="0.01" step="0.05" value="0.5"></div>
+      </div>
+    </details>
+
+    <div class="estimate" id="estimate"></div>
+    <button class="btn primary" id="runBtn">开始抓取</button>
+    <div class="err" id="formErr"></div>
+  </section>
+
+  <!-- 右：进度 + 结果 + 历史 -->
+  <div class="stack">
+    <section class="card" id="jobCard" style="display:none">
+      <h2 id="jobTitle">正在抓取</h2>
+      <div class="progress" id="progress"></div>
+      <div class="log" id="log"></div>
+    </section>
+
+    <section class="card">
+      <div class="tabs">
+        <div class="tab on" data-tab="results">结果</div>
+        <div class="tab" data-tab="history">历史记录</div>
+      </div>
+
+      <div id="tab-results">
+        <div class="runhead" id="runHead"></div>
+        <div class="filters" id="filters" style="display:none">
+          <span id="pfilters" style="display:contents"></span>
+          <span class="right">
+            <input type="text" id="search" placeholder="搜索评论、作者、帖子…">
+            <a class="btn" id="dlBtn" href="#">下载 CSV</a>
+          </span>
+        </div>
+        <div id="tableArea"><div class="empty">还没有结果。左边填好话题开始抓取，或者在「历史记录」里打开以前的结果。</div></div>
+      </div>
+
+      <div id="tab-history" style="display:none">
+        <div class="hist" id="hist"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="tokenModal">
+  <div class="card">
+    <h2>设置 Apify token</h2>
+    <p>在 console.apify.com → Settings → API &amp; Integrations 复制 token。只会保存在本机的 .env 文件里。</p>
+    <input type="password" id="tokenInput" placeholder="apify_api_…" autocomplete="off">
+    <div class="err" id="tokenErr"></div>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px">
+      <button class="btn" id="tokenCancel">取消</button>
+      <button class="btn" id="tokenSave" style="background:var(--accent);color:#fff;border-color:var(--accent)">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const P = {
+  x:        { name: "X",        color: "var(--x)" },
+  facebook: { name: "Facebook", color: "var(--facebook)" },
+  youtube:  { name: "YouTube",  color: "var(--youtube)" },
+  reddit:   { name: "Reddit",   color: "var(--reddit)" },
+  linkedin: { name: "LinkedIn", color: "var(--linkedin)" },
+  threads:  { name: "Threads",  color: "var(--threads)" },
+};
+const ORDER = Object.keys(P);
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k === "style") e.style.cssText = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+};
+const dot = (p) => el("span", { class: "dot", style: `background:${P[p]?.color || "#999"}` });
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+
+/* ---------- 表单 ---------- */
+let selected = new Set(load("platforms", ORDER));
+function renderChips() {
+  const box = $("platChips"); box.innerHTML = "";
+  for (const p of ORDER) {
+    box.append(el("span", { class: "chip" + (selected.has(p) ? " on" : ""), onclick: () => {
+      selected.has(p) ? selected.delete(p) : selected.add(p); save("platforms", [...selected]); renderChips(); estimate();
+    } }, dot(p), P[p].name));
+  }
+}
+$("selAll").onclick = () => { selected = new Set(ORDER); save("platforms", ORDER); renderChips(); estimate(); };
+$("selNone").onclick = () => { selected = new Set(); save("platforms", []); renderChips(); estimate(); };
+
+const form = load("form", {});
+for (const k of ["topic", "posts", "comments", "budget", "perRun"]) if (form[k] != null) $(k).value = form[k];
+$("testMode").checked = !!form.testMode;
+function readForm() {
+  const test = $("testMode").checked;
+  return {
+    topic: $("topic").value.trim(), platforms: ORDER.filter((p) => selected.has(p)),
+    posts: test ? 2 : +$("posts").value || 1, comments: test ? 5 : +$("comments").value || 1,
+    budget: test ? 1 : +$("budget").value || 1, max_usd_per_run: test ? 0.05 : +$("perRun").value || 0.5,
+  };
+}
+const TEST_VALUES = { posts: 2, comments: 5, budget: 1, perRun: 0.05 };
+let userValues = null;  // 打开测试模式前用户自己填的值，关掉时还原
+function syncTest() {
+  const test = $("testMode").checked;
+  for (const k of Object.keys(TEST_VALUES)) {
+    $(k).disabled = test;
+    if (test) { if (!userValues) userValues = {}; if (!(k in userValues)) userValues[k] = $(k).value; $(k).value = TEST_VALUES[k]; }
+    else if (userValues && k in userValues) $(k).value = userValues[k];
+  }
+  if (!test) userValues = null;
+}
+function saveForm() {
+  const v = (k) => (userValues && k in userValues ? userValues[k] : $(k).value);
+  save("form", { topic: $("topic").value, posts: v("posts"), comments: v("comments"),
+    budget: v("budget"), perRun: v("perRun"), testMode: $("testMode").checked });
+}
+for (const k of ["topic", "posts", "comments", "budget", "perRun"]) $(k).addEventListener("input", () => { saveForm(); estimate(); });
+$("testMode").addEventListener("change", () => { syncTest(); saveForm(); estimate(); });
+
+/* 粗略估价（按各 actor 免费档单价） */
+function estCost(p, n, c) {
+  switch (p) {
+    case "x":        return n * 0.00015 + n * c * 0.00015;
+    case "facebook": return Math.min(n * 3, 5) * 0.0026 + n * c * 0.00025 + 0.001;
+    case "youtube":  return n * 2 * 0.001 + n * (Math.max(10, c) * 0.00025 + 0.0005);
+    case "reddit":   return 0.003 + n * 0.00115 + n * c * 0.000575;
+    case "linkedin": return Math.max(10, n) * 0.00155 + n * c * 0.002;
+    case "threads":  return n * 0.002 + n * (c + 1) * 0.002;
+  }
+  return 0;
+}
+function estimate() {
+  const f = readForm();
+  const total = f.platforms.reduce((s, p) => s + estCost(p, f.posts, f.comments), 0);
+  const maxComments = f.platforms.length * f.posts * f.comments;
+  const box = $("estimate"); box.innerHTML = "";
+  box.append("预计花费约 ", el("b", {}, "$" + total.toFixed(total < 0.1 ? 3 : 2)),
+    `，最多约 ${maxComments.toLocaleString()} 条评论`,
+    el("small", {}, `总预算上限 $${f.budget}，超出的步骤会自动跳过`));
+}
+
+/* ---------- token ---------- */
+async function checkToken() {
+  const s = await (await fetch("/api/status")).json();
+  const pill = $("tokenPill");
+  pill.textContent = s.token ? "Apify token 已配置" : "未配置 Apify token";
+  pill.className = "pill " + (s.token ? "ok" : "bad");
+  return s.token;
+}
+$("tokenPill").onclick = () => { $("tokenModal").classList.add("on"); $("tokenInput").focus(); };
+$("tokenCancel").onclick = () => $("tokenModal").classList.remove("on");
+$("tokenSave").onclick = async () => {
+  const r = await fetch("/api/token", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: $("tokenInput").value }) });
+  const j = await r.json();
+  if (!j.ok) { $("tokenErr").textContent = j.error; return; }
+  $("tokenInput").value = ""; $("tokenErr").textContent = ""; $("tokenModal").classList.remove("on"); checkToken();
+};
+
+/* ---------- 运行 ---------- */
+let logSince = 0, polling = null;
+$("runBtn").onclick = async () => {
+  const f = readForm();
+  $("formErr").textContent = "";
+  if (!f.topic) return ($("formErr").textContent = "请填写话题");
+  if (!f.platforms.length) return ($("formErr").textContent = "至少选一个平台");
+  const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
+  const j = await r.json();
+  if (!j.ok) { $("formErr").textContent = j.error; if (/token/.test(j.error)) $("tokenModal").classList.add("on"); return; }
+  logSince = 0; $("log").textContent = "";
+  startPolling();
+};
+function startPolling() { if (!polling) { poll(); polling = setInterval(poll, 1500); } }
+async function poll() {
+  const j = await (await fetch("/api/job?since=" + logSince)).json();
+  if (!j.params) { clearInterval(polling); polling = null; return; }
+  $("jobCard").style.display = "";
+  $("runBtn").disabled = j.running;
+  $("runBtn").textContent = j.running ? "抓取中…" : "开始抓取";
+  const secs = Math.round(((j.finished || Date.now() / 1000) - j.started));
+  $("jobTitle").textContent = j.running ? `正在抓取「${j.params.topic}」 · ${secs}s`
+    : j.error ? `出错了：${j.error}` : `完成「${j.params.topic}」 · ${j.result.total} 条评论 · $${j.result.cost} · 用时 ${secs}s`;
+  const prog = $("progress"); prog.innerHTML = "";
+  for (const p of j.params.platforms) {
+    const st = j.status[p] || {};
+    const done = st.state === "done";
+    prog.append(el("div", { class: "pcard" + (done ? " done" : "") }, dot(p), el("span", { class: "name" }, P[p].name),
+      el("span", { class: "state" }, done ? `${st.count} 条` : (j.running ? el("span", { class: "spin" }) : "—"))));
+  }
+  if (j.logs.length) {
+    const box = $("log"); const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+    box.textContent += j.logs.join("\n") + "\n"; logSince = j.log_total;
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+  if (!j.running) {
+    clearInterval(polling); polling = null;
+    if (j.result) { const name = j.result.out_dir.split("/").pop(); await loadHistory(); openRun(name); }
+  }
+}
+
+/* ---------- 结果表 ---------- */
+let rows = [], view = [], shown = 0, pf = "all", current = null;
+async function openRun(name) {
+  current = name; save("lastRun", name);
+  rows = await (await fetch(`/api/runs/${encodeURIComponent(name)}/comments`)).json();
+  pf = "all"; $("search").value = "";
+  const meta = HIST.find((h) => h.name === name) || {};
+  const head = $("runHead"); head.innerHTML = "";
+  head.append(el("span", { class: "t" }, meta.topic || name),
+    el("span", { class: "m" }, `${meta.when || ""} · ${rows.length} 条评论` + (meta.cost != null ? ` · 花费 $${meta.cost}` : "")));
+  $("dlBtn").href = `/api/runs/${encodeURIComponent(name)}/download`;
+  $("filters").style.display = "";
+  switchTab("results"); renderFilters(); applyFilter();
+}
+function renderFilters() {
+  const box = $("pfilters"); box.innerHTML = "";
+  const counts = {}; rows.forEach((r) => (counts[r.platform] = (counts[r.platform] || 0) + 1));
+  box.append(el("span", { class: "fchip" + (pf === "all" ? " on" : ""), onclick: () => { pf = "all"; renderFilters(); applyFilter(); } }, `全部 ${rows.length}`));
+  for (const p of ORDER) if (counts[p]) box.append(el("span", { class: "fchip" + (pf === p ? " on" : ""),
+    onclick: () => { pf = p; renderFilters(); applyFilter(); } }, dot(p), `${P[p].name} ${counts[p]}`));
+}
+$("search").addEventListener("input", () => applyFilter());
+function applyFilter() {
+  const q = $("search").value.trim().toLowerCase();
+  view = rows.filter((r) => (pf === "all" || r.platform === pf) &&
+    (!q || [r.comment_text, r.comment_author, r.post_text, r.post_author].some((s) => (s || "").toLowerCase().includes(q))));
+  shown = 0; renderTable();
+}
+function fmtTime(t) {
+  if (!t) return "";
+  const d = new Date(t); if (isNaN(d)) return t;
+  return d.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+function renderTable(more = false) {
+  const area = $("tableArea");
+  if (!view.length) { area.innerHTML = ""; area.append(el("div", { class: "empty" }, rows.length ? "没有匹配的评论" : "这次没抓到评论")); return; }
+  const start = shown; shown = Math.min(view.length, shown + 100);
+  let tbody;
+  if (!more) {
+    area.innerHTML = "";
+    tbody = el("tbody");
+    area.append(el("div", { class: "tablewrap" }, el("table", {},
+      el("thead", {}, el("tr", {}, ["平台", "评论", "作者", "点赞", "时间", "所属帖子"].map((h, i) => el("th", { class: i === 3 ? "num" : "" }, h)))),
+      tbody)));
+  } else tbody = area.querySelector("tbody");
+  for (const r of view.slice(start, shown)) {
+    const txt = el("div", { class: "clamp", title: "点击展开", onclick: (e) => e.currentTarget.classList.toggle("open") }, r.comment_text);
+    const link = r.comment_url ? el("a", { href: r.comment_url, target: "_blank", rel: "noopener", class: "muted", style: "font-size:12px" }, "打开 ↗") : null;
+    tbody.append(el("tr", {},
+      el("td", {}, el("span", { class: "ptag" }, dot(r.platform), P[r.platform]?.name || r.platform)),
+      el("td", { class: "c" }, txt, r.is_reply === "True" ? el("span", { class: "muted", style: "font-size:12px" }, "↳ 回复 ") : null, link),
+      el("td", {}, r.comment_author),
+      el("td", { class: "num" }, r.comment_likes),
+      el("td", { class: "muted", style: "white-space:nowrap;font-size:12px" }, fmtTime(r.comment_time)),
+      el("td", { class: "post" }, r.post_url ? el("a", { href: r.post_url, target: "_blank", rel: "noopener" }, (r.post_text || r.post_url).slice(0, 90)) : r.post_text.slice(0, 90))));
+  }
+  area.querySelector(".more")?.remove();
+  if (shown < view.length) area.append(el("button", { class: "btn more", onclick: () => renderTable(true) }, `再显示 ${Math.min(100, view.length - shown)} 条（共 ${view.length}）`));
+}
+
+/* ---------- 历史 ---------- */
+let HIST = [];
+async function loadHistory() {
+  HIST = await (await fetch("/api/runs")).json();
+  const box = $("hist"); box.innerHTML = "";
+  if (!HIST.length) { box.append(el("div", { class: "empty" }, "还没有历史记录")); return; }
+  for (const h of HIST) {
+    box.append(el("div", { class: "hitem", onclick: () => openRun(h.name) },
+      el("span", { class: "t" }, h.topic),
+      el("span", { class: "r" }, `${h.total} 条` + (h.cost != null ? ` · $${h.cost}` : "")),
+      el("span", { class: "muted", style: "font-size:12px" }, h.when),
+      el("span"),
+      el("div", { class: "pp" }, ORDER.filter((p) => h.per_platform[p] != null).map((p) =>
+        el("span", { class: "ptag", style: "font-weight:500" }, dot(p), `${P[p].name} ${h.per_platform[p]}`)))));
+  }
+}
+function switchTab(t) {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x.dataset.tab === t));
+  $("tab-results").style.display = t === "results" ? "" : "none";
+  $("tab-history").style.display = t === "history" ? "" : "none";
+}
+document.querySelectorAll(".tab").forEach((x) => (x.onclick = () => switchTab(x.dataset.tab)));
+
+/* ---------- 启动 ---------- */
+renderChips(); syncTest(); estimate();
+checkToken().then((ok) => { if (!ok) $("tokenModal").classList.add("on"); });
+loadHistory().then(() => { const last = load("lastRun", null); if (last && HIST.find((h) => h.name === last)) openRun(last); });
+startPolling();
+</script>
+</body>
+</html>

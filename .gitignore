@@ -1,0 +1,11 @@
+# 密钥：绝对不要提交
+.env
+
+# 抓取结果（含他人的用户名和评论）
+output/
+
+# 本地 / 系统文件
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
